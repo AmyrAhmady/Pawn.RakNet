@@ -29,7 +29,7 @@
         #define PACK_PLUGIN_VERSION(%0,%1,%2) (((%0) << 16) | ((%1) << 8) | (%2))
     #endif
 
-    #define PAWNRAKNET_VERSION PACK_PLUGIN_VERSION(1, 5, 0)
+    #define PAWNRAKNET_VERSION PACK_PLUGIN_VERSION(1, 5, 1)
     #define PAWNRAKNET_INCLUDE_VERSION PAWNRAKNET_VERSION // backward compatibility
 
     #define PR_MAX_HANDLERS 256
@@ -666,7 +666,7 @@
 
         stock BS_ReadMarkersSync(BitStream:bs, data[PR_MarkersSync])
         {
-            new numberOfPlayers;
+            new numberOfPlayers, playerId, isActive;
 
             BS_ReadInt32(bs, numberOfPlayers);
 
@@ -677,7 +677,7 @@
             data[PR_numberOfPlayers] = numberOfPlayers;
 
             for (new i; i < numberOfPlayers; i++) {
-                new playerId, isActive;
+                playerId = isActive = 0;
 
                 BS_ReadUint16(bs, playerId);
 
@@ -704,7 +704,7 @@
 
         stock BS_ReadWeaponsUpdate(BitStream:bs, data[PR_WeaponsUpdate])
         {
-            new numberOfBytes, numberOfSlots;
+            new numberOfBytes, numberOfSlots, slotId, weaponId, ammo;
 
             BS_GetNumberOfBytesUsed(bs, numberOfBytes);
 
@@ -719,7 +719,7 @@
             );
 
             while (numberOfSlots--) {
-                new slotId, weaponId, ammo;
+                slotId = weaponId = ammo = 0;
 
                 BS_ReadValue(
                     bs,
@@ -1014,7 +1014,7 @@
                 PR_UINT16, data[PR_targetActorId]
             );
 
-            for (new slotId; slotId < PR_MAX_WEAPON_SLOTS; ++slotId) {
+            for (new slotId; slotId < PR_MAX_WEAPON_SLOTS; slotId++) {
                 if (!data[PR_slotUpdated][slotId]) {
                     continue;
                 }
@@ -1045,63 +1045,63 @@
             );
         }
 
-        stock PR_SendPacketToPlayerStream(BitStream:bs, playerid, PR_PacketPriority:priority = PR_HIGH_PRIORITY, PR_PacketReliability:reliability = PR_RELIABLE_ORDERED)
+        stock PR_SendPacketToPlayerStream(BitStream:bs, playerid, PR_PacketPriority:priority = PR_HIGH_PRIORITY, PR_PacketReliability:reliability = PR_RELIABLE_ORDERED, orderingchannel = 0)
         {
             #if defined foreach
             foreach (new i : Player) {
             #else
-            for (new i = GetPlayerPoolSize(); i >= 0; --i) {
+            for (new i = GetPlayerPoolSize(); i >= 0; i--) {
             #endif
                 if (!IsPlayerStreamedIn(i, playerid)) {
                     continue;
                 }
 
-                PR_SendPacket(bs, i, priority, reliability);
+                PR_SendPacket(bs, i, priority, reliability, orderingchannel);
             }
         }
 
-        stock PR_SendRPCToPlayerStream(BitStream:bs, playerid, rpcid, PR_PacketPriority:priority = PR_HIGH_PRIORITY, PR_PacketReliability:reliability = PR_RELIABLE_ORDERED)
+        stock PR_SendRPCToPlayerStream(BitStream:bs, playerid, rpcid, PR_PacketPriority:priority = PR_HIGH_PRIORITY, PR_PacketReliability:reliability = PR_RELIABLE_ORDERED, orderingchannel = 0)
         {
             #if defined foreach
             foreach (new i : Player) {
             #else
-            for (new i = GetPlayerPoolSize(); i >= 0; --i) {
+            for (new i = GetPlayerPoolSize(); i >= 0; i--) {
             #endif
                 if (!IsPlayerStreamedIn(i, playerid)) {
                     continue;
                 }
 
-                PR_SendRPC(bs, i, rpcid, priority, reliability);
+                PR_SendRPC(bs, i, rpcid, priority, reliability, orderingchannel);
             }
         }
 
-        stock PR_SendPacketToVehicleStream(BitStream:bs, vehicleid, excludedplayerid = INVALID_PLAYER_ID, PR_PacketPriority:priority = PR_HIGH_PRIORITY, PR_PacketReliability:reliability = PR_RELIABLE_ORDERED)
+        stock PR_SendPacketToVehicleStream(BitStream:bs, vehicleid, excludedplayerid = INVALID_PLAYER_ID, PR_PacketPriority:priority = PR_HIGH_PRIORITY, PR_PacketReliability:reliability = PR_RELIABLE_ORDERED, orderingchannel = 0)
         {
             #if defined foreach
             foreach (new i : Player) {
             #else
-            for (new i = GetPlayerPoolSize(); i >= 0; --i) {
+            for (new i = GetPlayerPoolSize(); i >= 0; i--) {
             #endif
                 if (i == excludedplayerid || !IsVehicleStreamedIn(vehicleid, i)) {
                     continue;
                 }
 
-                PR_SendPacket(bs, i, priority, reliability);
+                PR_SendPacket(bs, i, priority, reliability, orderingchannel);
             }
         }
 
-        stock PR_SendRPCToVehicleStream(BitStream:bs, vehicleid, rpcid, excludedplayerid = INVALID_PLAYER_ID, PR_PacketPriority:priority = PR_HIGH_PRIORITY, PR_PacketReliability:reliability = PR_RELIABLE_ORDERED)
+        stock PR_SendRPCToVehicleStream(BitStream:bs, vehicleid, rpcid, excludedplayerid = INVALID_PLAYER_ID, PR_PacketPriority:priority = PR_HIGH_PRIORITY, PR_PacketReliability:reliability = PR_RELIABLE_ORDERED, orderingchannel = 0)
         {
             #if defined foreach
             foreach (new i : Player) {
             #else
-            for (new i = GetPlayerPoolSize(); i >= 0; --i) {
+            for (new i = GetPlayerPoolSize(); i >= 0; i--) {
             #endif
                 if (i == excludedplayerid || !IsVehicleStreamedIn(vehicleid, i)) {
                     continue;
                 }
 
-                PR_SendRPC(bs, i, rpcid, priority, reliability);
+                PR_SendRPC(bs, i, rpcid, priority, reliability, orderingchannel);
             }
         }
 

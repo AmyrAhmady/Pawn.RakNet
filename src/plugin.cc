@@ -25,7 +25,9 @@
 #include "main.h"
 
 bool Plugin::OnLoad() {
-  config_ = Config::New("plugins/pawnraknet.cfg", true);
+  config_ = std::make_shared<Config>("plugins/pawnraknet.cfg");
+
+  config_->Read();
 
   StringCompressor::AddReference();
 
@@ -166,6 +168,9 @@ Packet *Plugin::NewPacket(PlayerIndex index, const BitStream &bs) {
   }
 
   Packet *p = reinterpret_cast<Packet *>(malloc(sizeof(Packet) + length));
+  if (!p) {
+    throw std::runtime_error{"Function malloc returned nullptr"};
+  }
 
   p->playerIndex = index;
   p->playerId = GetRakServer()->GetPlayerIDFromIndex(index);

@@ -27,33 +27,9 @@
 
 class BitStreamPool {
  public:
-  BitStream *New() {
-    for (auto &item : items_) {
-      if (!item.second) {
-        item.second = true;
+  BitStream *New();
 
-        return item.first.get();
-      }
-    }
-
-    const auto bs = std::make_shared<BitStream>();
-
-    items_.emplace_back(std::make_pair(bs, true));
-
-    return bs.get();
-  }
-
-  void Delete(BitStream *bs) {
-    for (auto &item : items_) {
-      if (item.first.get() == bs) {
-        item.second = false;
-
-        item.first->Reset();
-
-        return;
-      }
-    }
-  }
+  void Delete(BitStream *ptr);
 
  private:
   using Item =
