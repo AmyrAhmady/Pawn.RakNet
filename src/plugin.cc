@@ -29,8 +29,6 @@ bool Plugin::OnLoad() {
 
   config_->Read();
 
-  InstallPreHooks();
-
   RegisterNative<&Script::PR_Init>("PR_Init");
   RegisterNative<&Script::PR_RegHandler>("PR_RegHandler");
   RegisterNative<&Script::PR_SendPacket>("PR_SendPacket");
@@ -90,19 +88,8 @@ void Plugin::OnUnload() {
 
 void Plugin::OnProcessTick() {}
 
-void Plugin::InstallPreHooks() {
-  hook_amx_cleanup_ = urmem::hook::make(
-      reinterpret_cast<urmem::address_t *>(
-          plugin_data_[PLUGIN_DATA_AMX_EXPORTS])[PLUGIN_AMX_EXPORT_Cleanup],
-      &Hooks::amx_Cleanup);
-}
-
 void Plugin::SetCustomRPC(RPCIndex rpc_id) { custom_rpc_[rpc_id] = true; }
 
 bool Plugin::IsCustomRPC(RPCIndex rpc_id) { return custom_rpc_[rpc_id]; }
-
-const std::shared_ptr<urmem::hook> &Plugin::GetHookAmxCleanup() {
-  return hook_amx_cleanup_;
-}
 
 const std::shared_ptr<Config> &Plugin::GetConfig() { return config_; }

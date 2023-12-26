@@ -39,13 +39,9 @@ class Plugin : public ptl::AbstractPlugin<Plugin, Script, NativeParam> {
 
   void OnProcessTick();
 
-  void InstallPreHooks();
-
   void SetCustomRPC(RPCIndex rpc_id);
 
   bool IsCustomRPC(RPCIndex rpc_id);
-
-  const std::shared_ptr<urmem::hook> &GetHookAmxCleanup();
 
   const std::shared_ptr<Config> &GetConfig();
 

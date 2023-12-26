@@ -1,6 +1,3 @@
-[submodule "lib/urmem"]
-	path = lib/urmem
-	url = https://github.com/katursis/urmem
 [submodule "lib/cpptoml"]
 	path = lib/cpptoml
 	url = https://github.com/skystrife/cpptoml
