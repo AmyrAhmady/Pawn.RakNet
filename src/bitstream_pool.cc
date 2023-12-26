@@ -24,29 +24,55 @@
 
 #include "main.h"
 
-BitStream *BitStreamPool::New() {
-  for (auto &[bs, is_occupied] : items_) {
-    if (!is_occupied) {
-      is_occupied = true;
+BitStreamPool BitStreamPool::Instance;
 
-      return bs.get();
-    }
+uint32_t BitStreamPool::FindFreePoolID() const {
+  static uint32_t last_used_id = -1;
+
+  last_used_id++;
+
+  if (last_used_id == MAX_BS_POOL_NUMBER) {
+    // let's reset id back to -1
+    last_used_id = -1;
+    return FindFreePoolID();
   }
 
-  const auto &[bs, is_occupied] =
-      items_.emplace_back(std::make_shared<BitStream>(), true);
-
-  return bs.get();
+  if (items_.find(last_used_id) == items_.end()) {
+    return last_used_id;
+  } else {
+    return FindFreePoolID();
+  }
 }
 
-void BitStreamPool::Delete(BitStream *ptr) {
-  for (auto &[bs, is_occupied] : items_) {
-    if (bs.get() == ptr) {
-      bs->reset();
+std::pair<uint32_t, std::shared_ptr<BitStream>> BitStreamPool::New() {
+  uint32_t id = FindFreePoolID();
+  auto bs = std::make_shared<BitStream>();
+  auto pair = items_.insert({ id, bs });
 
-      is_occupied = false;
+  return { id, bs };
+}
 
-      return;
-    }
+std::pair<uint32_t, std::shared_ptr<BitStream>> BitStreamPool::New(BitStream* bs) {
+  uint32_t id = FindFreePoolID();
+  auto shadow = std::make_shared<BitStream>(bs->GetData(), bs->GetNumberOfBytesUsed(), false);
+  auto pair = items_.insert({ id, shadow });
+
+  return { id, shadow };
+}
+
+void BitStreamPool::Delete(uint32_t id) {
+  auto it = items_.find(id);
+  if (it != items_.end()) {
+    it->second.reset();
+    items_.erase(it);
+  }
+}
+
+BitStream *BitStreamPool::GetBSFromID(uint32_t id) {
+  auto it = items_.find(id);
+  if (it != items_.end()) {
+    return it->second.get();
+  } else {
+    return nullptr;
   }
 }

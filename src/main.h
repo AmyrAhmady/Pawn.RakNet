@@ -33,7 +33,6 @@
 #include "samp-ptl/ptl.h"
 #include "RakNet/bitstream.hpp"
 #include "RakNet/Encoding/str_compress.hpp"
-#include "urmem/urmem.hpp"
 #include "cpptoml/include/cpptoml.h"
 
 #include <unordered_set>
@@ -69,7 +68,6 @@ using RPCIndex = unsigned char;
 #include "script.h"
 #include "native_param.h"
 #include "plugin.h"
-#include "hooks.h"
 
 class PluginComponent final : public IComponent,
                               public PawnEventHandler,

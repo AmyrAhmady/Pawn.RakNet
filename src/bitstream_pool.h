@@ -25,17 +25,26 @@
 #ifndef PAWNRAKNET_BITSTREAM_POOL_H_
 #define PAWNRAKNET_BITSTREAM_POOL_H_
 
+constexpr uint32_t MAX_BS_POOL_NUMBER = 0xFFFFFFF7;
+
 class BitStreamPool {
  public:
-  BitStream *New();
+  std::pair<uint32_t, std::shared_ptr<BitStream>> New();
+  std::pair<uint32_t, std::shared_ptr<BitStream>> New(BitStream *bs);
 
-  void Delete(BitStream *ptr);
+  void Delete(uint32_t id);
 
+  BitStream *GetBSFromID(uint32_t id);
+
+  static BitStreamPool Instance;
  private:
-  using Item =
-      std::pair<std::shared_ptr<BitStream> /* bs */, bool /* is_occupied */>;
+  uint32_t FindFreePoolID() const;
 
-  std::vector<Item> items_;
+  std::unordered_map<uint32_t, std::shared_ptr<BitStream>> items_;
 };
 
 #endif  // PAWNRAKNET_BITSTREAM_POOL_H_
+
+#define GET_BS_CHECKED(id, bs) \
+  auto bs = BitStreamPool::Instance.GetBSFromID(static_cast<uint32_t>(id)); \
+  if (bs == nullptr) return 0;

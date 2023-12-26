@@ -43,67 +43,67 @@ class Script : public ptl::AbstractScript<Script> {
   // native PR_SendPacket(BitStream:bs, playerid, PR_PacketPriority:priority =
   // PR_HIGH_PRIORITY, PR_PacketReliability:reliability = PR_RELIABLE_ORDERED,
   // orderingchannel = 0);
-  cell PR_SendPacket(BitStream *bs, int player_id, PR_PacketPriority priority,
+  cell PR_SendPacket(cell id, int player_id, PR_PacketPriority priority,
                      PR_PacketReliability reliability,
                      unsigned char ordering_channel);
 
   // native PR_SendRPC(BitStream:bs, playerid, rpcid, PR_PacketPriority:priority
   // = PR_HIGH_PRIORITY, PR_PacketReliability:reliability =
   // PR_RELIABLE_ORDERED, orderingchannel = 0);
-  cell PR_SendRPC(BitStream *bs, int player_id, RPCIndex rpc_id,
+  cell PR_SendRPC(cell id, int player_id, RPCIndex rpc_id,
                   PR_PacketPriority priority, PR_PacketReliability reliability,
                   unsigned char ordering_channel);
 
   // native PR_EmulateIncomingPacket(BitStream:bs, playerid);
-  cell PR_EmulateIncomingPacket(BitStream *bs, int player_id);
+  cell PR_EmulateIncomingPacket(cell id, int player_id);
 
   // native PR_EmulateIncomingRPC(BitStream:bs, playerid, rpcid);
-  cell PR_EmulateIncomingRPC(BitStream *bs, int player_id, RPCIndex rpc_id);
+  cell PR_EmulateIncomingRPC(cell id, int player_id, RPCIndex rpc_id);
 
   // native BitStream:BS_New();
   cell BS_New();
 
   // native BitStream:BS_NewCopy(BitStream:bs);
-  cell BS_NewCopy(BitStream *bs);
+  cell BS_NewCopy(cell id);
 
   // native BS_Delete(&BitStream:bs);
-  cell BS_Delete(cell *bs);
+  cell BS_Delete(cell bs);
 
   // native BS_Reset(BitStream:bs);
-  cell BS_Reset(BitStream *bs);
+  cell BS_Reset(cell id);
 
   // native BS_ResetReadPointer(BitStream:bs);
-  cell BS_ResetReadPointer(BitStream *bs);
+  cell BS_ResetReadPointer(cell id);
 
   // native BS_ResetWritePointer(BitStream:bs);
-  cell BS_ResetWritePointer(BitStream *bs);
+  cell BS_ResetWritePointer(cell id);
 
   // native BS_IgnoreBits(BitStream:bs, number_of_bits);
-  cell BS_IgnoreBits(BitStream *bs, int number_of_bits);
+  cell BS_IgnoreBits(cell id, int number_of_bits);
 
   // native BS_SetWriteOffset(BitStream:bs, offset);
-  cell BS_SetWriteOffset(BitStream *bs, int offset);
+  cell BS_SetWriteOffset(cell id, int offset);
 
   // native BS_GetWriteOffset(BitStream:bs, &offset);
-  cell BS_GetWriteOffset(BitStream *bs, cell *offset);
+  cell BS_GetWriteOffset(cell id, cell *offset);
 
   // native BS_SetReadOffset(BitStream:bs, offset);
-  cell BS_SetReadOffset(BitStream *bs, int offset);
+  cell BS_SetReadOffset(cell id, int offset);
 
   // native BS_GetReadOffset(BitStream:bs, &offset);
-  cell BS_GetReadOffset(BitStream *bs, cell *offset);
+  cell BS_GetReadOffset(cell id, cell *offset);
 
   // native BS_GetNumberOfBitsUsed(BitStream:bs, &number);
-  cell BS_GetNumberOfBitsUsed(BitStream *bs, cell *number);
+  cell BS_GetNumberOfBitsUsed(cell id, cell *number);
 
   // native BS_GetNumberOfBytesUsed(BitStream:bs, &number);
-  cell BS_GetNumberOfBytesUsed(BitStream *bs, cell *number);
+  cell BS_GetNumberOfBytesUsed(cell id, cell *number);
 
   // native BS_GetNumberOfUnreadBits(BitStream:bs, &number);
-  cell BS_GetNumberOfUnreadBits(BitStream *bs, cell *number);
+  cell BS_GetNumberOfUnreadBits(cell id, cell *number);
 
   // native BS_GetNumberOfBitsAllocated(BitStream:bs, &number);
-  cell BS_GetNumberOfBitsAllocated(BitStream *bs, cell *number);
+  cell BS_GetNumberOfBitsAllocated(cell id, cell *number);
 
   // native BS_WriteValue(BitStream:bs, {PR_ValueType, Float, _}:...);
   cell BS_WriteValue(cell *params);
@@ -114,20 +114,20 @@ class Script : public ptl::AbstractScript<Script> {
   bool OnLoad();
 
   template <PR_EventType event_type>
-  bool OnEvent(int player_id, unsigned char event_id, BitStream *bs) {
+  bool OnEvent(int player_id, unsigned char event_id, BitStream *bs, uint32_t bsId) {
     if constexpr (event_type == PR_OUTGOING_PACKET) {
-      if (!ExecPublic(public_on_outcoming_packet_, player_id, event_id, bs)) {
+      if (!ExecPublic(public_on_outcoming_packet_, player_id, event_id, bsId)) {
         return false;
       }
     } else if constexpr (event_type == PR_OUTGOING_RPC) {
-      if (!ExecPublic(public_on_outcoming_rpc_, player_id, event_id, bs)) {
+      if (!ExecPublic(public_on_outcoming_rpc_, player_id, event_id, bsId)) {
         return false;
       }
     }
 
     if constexpr (event_type != PR_INCOMING_CUSTOM_RPC) {
       if (!ExecPublic(std::get<event_type>(publics_), player_id, event_id,
-                      bs)) {
+          bsId)) {
         return false;
       }
     }
@@ -135,7 +135,7 @@ class Script : public ptl::AbstractScript<Script> {
     for (const auto &handler : std::get<event_type>(handlers_).at(event_id)) {
       bs->resetReadPointer();
 
-      if (!handler->Exec(player_id, bs)) {
+      if (!handler->Exec(player_id, bsId)) {
         return false;
       }
     }
@@ -146,7 +146,7 @@ class Script : public ptl::AbstractScript<Script> {
   }
 
   bool ExecPublic(const PublicPtr &pub, int player_id, unsigned char event_id,
-                  BitStream *bs);
+                  uint32_t bsId);
 
   void InitPublic(PR_EventType type, const std::string &public_name);
 
@@ -154,8 +154,6 @@ class Script : public ptl::AbstractScript<Script> {
                    PR_EventType type);
 
   void InitHandlers();
-
-  BitStream *GetBitStream(cell handle);
 
   template <typename T, bool compressed = false>
   void WriteValue(BitStream *bs, cell value);
@@ -179,8 +177,6 @@ class Script : public ptl::AbstractScript<Script> {
   // backward compatibility
   PublicPtr public_on_outcoming_packet_;
   PublicPtr public_on_outcoming_rpc_;
-
-  BitStreamPool bitstream_pool_;
 };
 
 #endif  // PAWNRAKNET_SCRIPT_H_

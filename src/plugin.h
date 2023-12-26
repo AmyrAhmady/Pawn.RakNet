@@ -47,17 +47,22 @@ class Plugin : public ptl::AbstractPlugin<Plugin, Script, NativeParam> {
 
   template <PR_EventType event_type>
   static bool OnEvent(int player_id, unsigned char event_id, BitStream *bs) {
-    return EveryScript([=](const std::shared_ptr<Script> &script) {
-      return script->OnEvent<event_type>(player_id, event_id, bs);
+    auto it = BitStreamPool::Instance.New(bs);
+    auto result = EveryScript([=](const std::shared_ptr<Script> &script) {
+      return script->OnEvent<event_type>(player_id, event_id, it.second.get(), it.first);
     });
+
+    bs->resetWritePointer();
+    bs->WriteBits(it.second->GetData(), it.second->GetNumberOfBitsUsed());
+    BitStreamPool::Instance.Delete(it.first);
+
+    return result;
   }
 
   static Plugin &Get() { return Instance(); }
 
  private:
   std::shared_ptr<Config> config_;
-
-  std::shared_ptr<urmem::hook> hook_amx_cleanup_;
 
   std::array<bool, PR_MAX_HANDLERS> custom_rpc_{};
 };

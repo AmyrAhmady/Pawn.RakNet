@@ -42,10 +42,12 @@ cell Script::PR_RegHandler(unsigned char event_id, std::string public_name,
 // native PR_SendPacket(BitStream:bs, playerid, PR_PacketPriority:priority =
 // PR_HIGH_PRIORITY, PR_PacketReliability:reliability = PR_RELIABLE_ORDERED,
 // orderingchannel = 0);
-cell Script::PR_SendPacket(BitStream *bs, int player_id,
+cell Script::PR_SendPacket(cell id, int player_id,
                            PR_PacketPriority priority,
                            PR_PacketReliability reliability,
                            unsigned char ordering_channel) {
+  GET_BS_CHECKED(id, bs);
+
   const bool broadcast = player_id == -1;
 
   auto core = PluginComponent::getCore();
@@ -76,10 +78,12 @@ cell Script::PR_SendPacket(BitStream *bs, int player_id,
 // native PR_SendRPC(BitStream:bs, playerid, rpcid, PR_PacketPriority:priority
 // = PR_HIGH_PRIORITY, PR_PacketReliability:reliability =
 // PR_RELIABLE_ORDERED, orderingchannel = 0);
-cell Script::PR_SendRPC(BitStream *bs, int player_id, RPCIndex rpc_id,
+cell Script::PR_SendRPC(cell id, int player_id, RPCIndex rpc_id,
                         PR_PacketPriority priority,
                         PR_PacketReliability reliability,
                         unsigned char ordering_channel) {
+  GET_BS_CHECKED(id, bs);
+
   const bool broadcast = player_id == -1;
 
   auto core = PluginComponent::getCore();
@@ -108,7 +112,9 @@ cell Script::PR_SendRPC(BitStream *bs, int player_id, RPCIndex rpc_id,
 }
 
 // native PR_EmulateIncomingPacket(BitStream:bs, playerid);
-cell Script::PR_EmulateIncomingPacket(BitStream *bs, int player_id) {
+cell Script::PR_EmulateIncomingPacket(cell id, int player_id) {
+  GET_BS_CHECKED(id, bs);
+
   auto core = PluginComponent::getCore();
   if (!core) {
     throw std::runtime_error{"Invalid component core"};
@@ -162,8 +168,10 @@ cell Script::PR_EmulateIncomingPacket(BitStream *bs, int player_id) {
 }
 
 // native PR_EmulateIncomingRPC(BitStream:bs, playerid, rpcid);
-cell Script::PR_EmulateIncomingRPC(BitStream *bs, int player_id,
+cell Script::PR_EmulateIncomingRPC(cell id, int player_id,
                                    RPCIndex rpc_id) {
+  GET_BS_CHECKED(id, bs);
+
   auto core = PluginComponent::getCore();
   if (!core) {
     throw std::runtime_error{"Invalid component core"};
@@ -210,113 +218,132 @@ cell Script::PR_EmulateIncomingRPC(BitStream *bs, int player_id,
 }
 
 // native BitStream:BS_New();
-cell Script::BS_New() { return reinterpret_cast<cell>(bitstream_pool_.New()); }
-
-// native BitStream:BS_NewCopy(BitStream:bs);
-cell Script::BS_NewCopy(BitStream *bs) {
-  const auto bs_copy = bitstream_pool_.New();
-
-  int original_read_offset = bs->GetReadOffset();
-
-  bs->resetReadPointer();
-
-  bs_copy->Write(bs);
-
-  bs->SetReadOffset(original_read_offset);
-
-  return reinterpret_cast<cell>(bs_copy);
+cell Script::BS_New() { 
+  auto item = BitStreamPool::Instance.New();
+  return static_cast<cell>(item.first);
 }
 
-// native BS_Delete(&BitStream:bs);
-cell Script::BS_Delete(cell *bs) {
-  bitstream_pool_.Delete(GetBitStream(*bs));
+// native BitStream:BS_NewCopy(BitStream:bs);
+cell Script::BS_NewCopy(cell id) {
+  auto bs = BitStreamPool::Instance.GetBSFromID(id);
 
-  *bs = 0;
+  if (bs) {
+    const auto item_copy = BitStreamPool::Instance.New();
 
+    int original_read_offset = bs->GetReadOffset();
+
+    bs->resetReadPointer();
+
+    item_copy.second->Write(bs);
+
+    bs->SetReadOffset(original_read_offset);
+
+    return static_cast<cell>(item_copy.first);
+  }
+  else {
+    return MAX_BS_POOL_NUMBER;
+  }
+}
+
+// native BS_Delete(BitStream:bs);
+cell Script::BS_Delete(cell id) {
+    BitStreamPool::Instance.Delete(static_cast<uint32_t>(id));
   return 1;
 }
 
 // native BS_Reset(BitStream:bs);
-cell Script::BS_Reset(BitStream *bs) {
-  bs->reset();
+cell Script::BS_Reset(cell id) {
+  GET_BS_CHECKED(id, bs);
 
+  bs->reset();
   return 1;
 }
 
 // native BS_ResetReadPointer(BitStream:bs);
-cell Script::BS_ResetReadPointer(BitStream *bs) {
-  bs->resetReadPointer();
+cell Script::BS_ResetReadPointer(cell id) {
+  GET_BS_CHECKED(id, bs);
 
+  bs->resetReadPointer();
   return 1;
 }
 
 // native BS_ResetWritePointer(BitStream:bs);
-cell Script::BS_ResetWritePointer(BitStream *bs) {
-  bs->resetWritePointer();
+cell Script::BS_ResetWritePointer(cell id) {
+  GET_BS_CHECKED(id, bs);
 
+  bs->resetWritePointer();
   return 1;
 }
 
 // native BS_IgnoreBits(BitStream:bs, number_of_bits);
-cell Script::BS_IgnoreBits(BitStream *bs, int number_of_bits) {
-  bs->IgnoreBits(number_of_bits);
+cell Script::BS_IgnoreBits(cell id, int number_of_bits) {
+  GET_BS_CHECKED(id, bs);
 
+  bs->IgnoreBits(number_of_bits);
   return 1;
 }
 
 // native BS_SetWriteOffset(BitStream:bs, offset);
-cell Script::BS_SetWriteOffset(BitStream *bs, int offset) {
-  bs->SetWriteOffset(offset);
+cell Script::BS_SetWriteOffset(cell id, int offset) {
+  GET_BS_CHECKED(id, bs);
 
+  bs->SetWriteOffset(offset);
   return 1;
 }
 
 // native BS_GetWriteOffset(BitStream:bs, &offset);
-cell Script::BS_GetWriteOffset(BitStream *bs, cell *offset) {
-  *offset = bs->GetWriteOffset();
+cell Script::BS_GetWriteOffset(cell id, cell *offset) {
+  GET_BS_CHECKED(id, bs);
 
+  *offset = bs->GetWriteOffset();
   return 1;
 }
 
 // native BS_SetReadOffset(BitStream:bs, offset);
-cell Script::BS_SetReadOffset(BitStream *bs, int offset) {
-  bs->SetReadOffset(offset);
+cell Script::BS_SetReadOffset(cell id, int offset) {
+  GET_BS_CHECKED(id, bs);
 
+  bs->SetReadOffset(offset);
   return 1;
 }
 
 // native BS_GetReadOffset(BitStream:bs, &offset);
-cell Script::BS_GetReadOffset(BitStream *bs, cell *offset) {
-  *offset = bs->GetReadOffset();
+cell Script::BS_GetReadOffset(cell id, cell *offset) {
+  GET_BS_CHECKED(id, bs);
 
+  *offset = bs->GetReadOffset();
   return 1;
 }
 
 // native BS_GetNumberOfBitsUsed(BitStream:bs, &number);
-cell Script::BS_GetNumberOfBitsUsed(BitStream *bs, cell *number) {
-  *number = bs->GetNumberOfBitsUsed();
+cell Script::BS_GetNumberOfBitsUsed(cell id, cell *number) {
+  GET_BS_CHECKED(id, bs);
 
+  *number = bs->GetNumberOfBitsUsed();
   return 1;
 }
 
 // native BS_GetNumberOfBytesUsed(BitStream:bs, &number);
-cell Script::BS_GetNumberOfBytesUsed(BitStream *bs, cell *number) {
-  *number = bs->GetNumberOfBytesUsed();
+cell Script::BS_GetNumberOfBytesUsed(cell id, cell *number) {
+  GET_BS_CHECKED(id, bs);
 
+  *number = bs->GetNumberOfBytesUsed();
   return 1;
 }
 
 // native BS_GetNumberOfUnreadBits(BitStream:bs, &number);
-cell Script::BS_GetNumberOfUnreadBits(BitStream *bs, cell *number) {
-  *number = bs->GetNumberOfUnreadBits();
+cell Script::BS_GetNumberOfUnreadBits(cell id, cell *number) {
+  GET_BS_CHECKED(id, bs);
 
+  *number = bs->GetNumberOfUnreadBits();
   return 1;
 }
 
 // native BS_GetNumberOfBitsAllocated(BitStream:bs, &number);
-cell Script::BS_GetNumberOfBitsAllocated(BitStream *bs, cell *number) {
-  *number = bs->GetNumberOfBitsAllocated();
+cell Script::BS_GetNumberOfBitsAllocated(cell id, cell *number) {
+  GET_BS_CHECKED(id, bs);
 
+  *number = bs->GetNumberOfBitsAllocated();
   return 1;
 }
 
@@ -324,7 +351,7 @@ cell Script::BS_GetNumberOfBitsAllocated(BitStream *bs, cell *number) {
 cell Script::BS_WriteValue(cell *params) {
   AssertMinParams(3, params);
 
-  const auto bs = GetBitStream(params[1]);
+  GET_BS_CHECKED(static_cast<uint32_t>(params[1]), bs);
 
   for (std::size_t i = 1; i < (params[0] / sizeof(cell)) - 1; i += 2) {
     const auto type = *GetPhysAddr(params[i + 1]);
@@ -458,7 +485,7 @@ cell Script::BS_WriteValue(cell *params) {
 cell Script::BS_ReadValue(cell *params) {
   AssertMinParams(3, params);
 
-  const auto bs = GetBitStream(params[1]);
+  GET_BS_CHECKED(static_cast<uint32_t>(params[1]), bs);
 
   for (std::size_t i = 1; i < (params[0] / sizeof(cell)) - 1; i += 2) {
     const auto type = *GetPhysAddr(params[i + 1]);
@@ -645,14 +672,19 @@ bool Script::OnLoad() {
 }
 
 bool Script::ExecPublic(const PublicPtr &pub, int player_id,
-                        unsigned char event_id, BitStream *bs) {
+                        unsigned char event_id, uint32_t bsId) {
   if (!pub || !pub->Exists()) {
+    return true;
+  }
+
+  auto bs = BitStreamPool::Instance.GetBSFromID(bsId);
+  if (bs == nullptr) {
     return true;
   }
 
   bs->resetReadPointer();
 
-  return pub->Exec(player_id, static_cast<cell>(event_id), bs);
+  return pub->Exec(player_id, static_cast<cell>(event_id), bsId);
 }
 
 void Script::InitPublic(PR_EventType type, const std::string &public_name) {
@@ -681,15 +713,6 @@ void Script::InitHandlers() {
       pub->Exec();
     }
   }
-}
-
-BitStream *Script::GetBitStream(cell handle) {
-  const auto bs = reinterpret_cast<BitStream *>(handle);
-  if (!bs) {
-    throw std::runtime_error{"Invalid BitStream handle"};
-  }
-
-  return bs;
 }
 
 template <typename T, bool compressed>

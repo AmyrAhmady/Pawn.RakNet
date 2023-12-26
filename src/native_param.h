@@ -26,7 +26,7 @@
 #define PAWNRAKNET_NATIVE_PARAM_H_
 
 struct NativeParam : Script::NativeParam {
-  operator BitStream*() { return script.GetBitStream(raw_value); }
+  operator BitStream*() { return BitStreamPool::Instance.GetBSFromID(static_cast<uint32_t>(raw_value)); }
 
   operator RPCIndex() { return static_cast<RPCIndex>(raw_value); }
 
