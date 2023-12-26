@@ -49,7 +49,7 @@ void PluginComponent::onInit(IComponentList *components) {
 
     core_->logLn(LogLevel::Error,
                  "Error loading component %.*s: Pawn component not loaded",
-                 name.length(), name.data());
+                 PRINT_VIEW(name));
 
     return;
   }
