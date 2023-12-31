@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Available configs: Debug, [RelWithDebInfo], Release
+# Available configs: Debug, RelWithDebInfo, [Release]
 [[ -z "$CONFIG" ]] \
-&& config=RelWithDebInfo \
+&& config=Release \
 || config="$CONFIG"
 
 docker build \
